@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Diagnóstico — Trace Apreciações</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+  h1 { font-size: 22px; }
+  .test { padding: 10px 14px; margin: 6px 0; border-radius: 8px; }
+  .ok { background: #DCFCE7; color: #14532D; }
+  .err { background: #FEE2E2; color: #7F1D1D; }
+  .warn { background: #FEF9C3; color: #713F12; }
+  pre { background: #1A1F2B; color: #FAD250; padding: 14px; border-radius: 8px; overflow-x: auto; font-size: 12px; }
+  button { padding: 10px 20px; background: #FA9600; color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; margin: 5px; }
+</style>
+</head>
+<body>
+<h1>🔍 Diagnóstico — Trace Apreciações</h1>
+<p>Esta página testa se todos os scripts estão carregando corretamente. Abra o <strong>console do navegador (F12)</strong> para ver detalhes.</p>
+
+<div id="results"></div>
+
+<h3>Erros capturados:</h3>
+<pre id="errors">Aguardando...</pre>
+
+<h3>Próximos passos:</h3>
+<button onclick="window.location.href='index.html'">📱 Abrir a aplicação principal</button>
+<button onclick="localStorage.clear(); sessionStorage.clear(); alert('Cache limpo. Recarregue index.html.')">🧹 Limpar cache do navegador</button>
+
+<script>
+window.__errors = [];
+window.addEventListener('error', function(e){
+  window.__errors.push(e.message + ' (' + (e.filename||'?') + ':' + e.lineno + ')');
+  document.getElementById('errors').textContent = window.__errors.join('\n');
+});
+
+function check(name, condition, hint){
+  var r = document.getElementById('results');
+  var div = document.createElement('div');
+  div.className = 'test ' + (condition ? 'ok' : 'err');
+  div.textContent = (condition ? '✓ ' : '✗ ') + name + (condition ? '' : ' — ' + (hint||''));
+  r.appendChild(div);
+  return condition;
+}
+</script>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/risk.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/dev-projects.js"></script>
+<script src="assets/js/assessment-mgmt.js"></script>
+
+<script>
+// Roda checks após todos carregarem
+setTimeout(function(){
+  check('config.js carregado (TRACE_LOGO definido)', typeof TRACE_LOGO !== 'undefined');
+  check('config.js — METHODOLOGY_PAGES', typeof METHODOLOGY_PAGES !== 'undefined');
+  check('config.js — STEPS', typeof STEPS !== 'undefined');
+  check('config.js — DB_KEY, PROJECTS_KEY, STORAGE_KEY',
+    typeof DB_KEY !== 'undefined' && typeof PROJECTS_KEY !== 'undefined' && typeof STORAGE_KEY !== 'undefined');
+  check('storage.js — listProjects', typeof listProjects === 'function');
+  check('storage.js — saveAssessmentToStorage', typeof saveAssessmentToStorage === 'function');
+  check('storage.js — listDevProjects', typeof listDevProjects === 'function');
+  check('storage.js — saveDevAttachments', typeof saveDevAttachments === 'function');
+  check('risk.js — hrn() e grau()', typeof hrn === 'function' && typeof grau === 'function');
+  check('auth.js — loginClick, showLogin, signOutUser',
+    typeof loginClick === 'function' && typeof showLogin === 'function' && typeof signOutUser === 'function');
+  check('auth.js — ALLOWED_USERS configurado',
+    typeof ALLOWED_USERS !== 'undefined' && ALLOWED_USERS.length > 0,
+    'lista de usuários permitidos não foi definida');
+  check('dev-projects.js — DEV_SECTORS', typeof DEV_SECTORS !== 'undefined');
+  check('dev-projects.js — createDevProject', typeof createDevProject === 'function');
+  check('dev-projects.js — contNaoConformidades', typeof contNaoConformidades === 'function');
+  check('assessment-mgmt.js — saveCurrentAssessment',
+    typeof saveCurrentAssessment === 'function');
+  check('assessment-mgmt.js — openRoteamentoModal',
+    typeof openRoteamentoModal === 'function');
+  check('assessment-mgmt.js — bind, bindHome',
+    typeof bind === 'function' && typeof bindHome === 'function');
+  check('BASE_EXIGENCIAS e BASE_TEXTOS (do app principal)',
+    typeof BASE_EXIGENCIAS !== 'undefined' && typeof BASE_TEXTOS !== 'undefined',
+    'estas variáveis estão no <script> inline do index.html — esperado FALHAR aqui (só estão no app principal)');
+
+  if(window.__errors.length === 0){
+    document.getElementById('errors').textContent = '✓ Nenhum erro detectado.';
+  }
+}, 500);
+</script>
+
+</body>
+</html>
