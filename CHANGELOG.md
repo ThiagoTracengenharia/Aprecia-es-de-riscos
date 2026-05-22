@@ -104,8 +104,44 @@ Após a apreciação ser concluída, o sistema permite rotear cada risco identif
 - `assets/js/dev-projects.js` (9,4 KB) — config, fases, engenheiros, helpers de roteamento.
 - `assets/js/assessment-mgmt.js` (21 KB) — gerenciamento de apreciações (CRUD, modal de roteamento, bind).
 
+### Adicionado — Fase 3 (esqueleto do backend + 1 fluxo end-to-end)
+
+Estrutura completa em `server/`:
+
+- `package.json` com deps: express, cors, better-sqlite3, bcryptjs, jsonwebtoken, multer, dotenv
+- `.env.example` documentado
+- `src/index.js` — bootstrap Express, CORS, JSON parser, error handler, health check, serve frontend estático
+- `src/config.js` — carrega `.env`
+- `src/db.js` — conexão better-sqlite3 (WAL + foreign keys)
+- `src/db/migrations/001_initial.sql` — schema completo com 13 tabelas: `users`, `engineers`, `clientes`, `projetos`, `equipamentos`, `apreciacoes`, `riscos`, `banco_exigencias`, `banco_textos`, `dev_projects`, `dev_attachments`, `auditoria`, `schema_version`
+- `src/db/migrate.js` — runner de migrations
+- `src/db/seed.js` — cria usuário admin (Thiago) e engenheiro correspondente, com senha bcrypt
+- `src/db/reset.js` — drop + migrate + seed
+- `src/middleware/auth.js` — `signToken`, `requireAuth` (JWT verify), `requireAdmin`
+- `src/routes/auth.js` — **completo**: `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`, com auditoria
+- `src/routes/projetos.js`, `apreciacoes.js`, `dev-projects.js`, `engineers.js`, `banco.js`, `uploads.js` — **stubs** (retornam 501 Not Implemented, prontos para próxima sessão)
+- `server/README.md` — setup, comandos, endpoints, plano de migração para Postgres
+
+SQL escrito em sintaxe ANSI-friendly para migrar para Postgres na produção sem reescrever queries.
+
+### Adicionado — Fase 3.1 (CRUD completo)
+
+Helpers em `src/util/`:
+- `ids.js` — `makeId(prefix)` (timestamp+random) e `nextTag(db, table, prefix, width)` (sequencial por prefixo).
+- `audit.js` — `audit(userId, acao, entidade, entidadeId, detalhe)` — inserção tolerante a falhas na tabela `auditoria`.
+
+Endpoints implementados (todos protegidos por `requireAuth`, com auditoria):
+
+- **`/api/projetos`** — list/get/post/put/delete + sub-recurso `equipamentos`. TAG `PJT-NNN` autogerada. Filtro por `?status` e busca por `?q`. Cliente armazenado como snapshot.
+- **`/api/engineers`** — CRUD com soft-delete (`active=0`). Setores armazenados como JSON array, normalizados na entrada (aceita array, CSV ou JSON string). Filtro `?setor=mecanico` para roteamento.
+- **`/api/apreciacoes`** — CRUD com **riscos como filhos** dentro de transações. PUT/POST aceitam `riscos: [...]` no body e fazem replace atômico. Helper `recalcTotals` mantém `total_riscos / riscos_baixo / medio / alto / muito` em sincronia. Sub-endpoints `/:id/riscos` para CRUD de risco unitário. Compatibilidade preservada via campo `state_json` (estado serializado do front).
+- **`/api/dev-projects`** — CRUD completo. TAG por setor `PJT-MEC-00001 / PJT-HID / PJT-PNE / PJT-ELE` autogerada. Histórico armazenado como JSON array. **Upload de anexos** via multer (`POST /:id/anexos`, campo `file`), arquivos físicos em `storage/uploads/<dev_id>/`, download via `GET /:id/anexos/:attId`, delete remove do disco. Limite configurável (`UPLOAD_MAX_MB`).
+- **`/api/banco/exigencias`** e **`/api/banco/textos`** — read-only para todos, PUT/DELETE só para `requireAdmin`. Upsert por ID (cria se não existe). Soft-delete via `active=0`. Entries/items armazenados como JSON.
+- **`/api/uploads`** — endpoint genérico (avulso, não vinculado). Upload em `storage/uploads/misc/<userId>/`. Serve arquivos via `GET /api/uploads/<path>` com checagem anti path-traversal.
+
+Smoke test: `node --check` em todos os 16 arquivos JS do servidor — todos OK.
+
 ### Próximas etapas
-- **Fase 3**: Backend Node + Postgres (server/ com Express, schema SQL, endpoints REST, .env.example, seed).
 - **Fase 4**: Substituir `localStorage` por chamadas à API REST — basta editar `storage.js` e `auth.js`.
 - **Fase 5**: Gerar PDF server-side com Puppeteer.
 - **Fase 6**: Publicar como aplicação web em `app.tracengenharia.com.br` (DNS via Hostinger, hospedagem inicial em Railway).

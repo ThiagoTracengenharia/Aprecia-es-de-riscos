@@ -1,0 +1,25 @@
+{
+  "name": "trace-riscos-server",
+  "version": "1.0.0",
+  "description": "Backend da ferramenta Apreciações de Risco — Trace Engenharia",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node --experimental-sqlite src/index.js",
+    "dev": "node --watch --experimental-sqlite src/index.js",
+    "db:migrate": "node --experimental-sqlite src/db/migrate.js",
+    "db:seed": "node --experimental-sqlite src/db/seed.js",
+    "db:reset": "node --experimental-sqlite src/db/reset.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
